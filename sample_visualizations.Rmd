@@ -1,0 +1,365 @@
+---
+title: "Visualization Best Practices"
+author: "Brian Seko"
+date: "5/15/2024"
+output: html_document
+---
+
+# Why Visualize Data?
+
+Visualizing data should you provide more context and information than any other form of stakeholder engagement. Otherwise, don't visualize the data. 
+
+## A Visualization Should be:
+
+<b>Effective</b>
+* Delivering the facts better than any other method
+
+<b>Expressive</b>
+* Show all the facts, and only the facts (relevant facts…)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+```
+
+```{r, include=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(lubridate)
+library(xts)
+```
+
+```{r}
+data(mtcars)
+mtcars$model <- rownames(mtcars)
+
+mtcars$model_split <- mtcars$model
+
+
+mtcars <- mtcars %>% 
+  separate(model_split, c("make", "model type"), " ")
+
+```
+
+```{r}
+ggplot(mtcars) +
+  geom_point(aes(y=mpg, x=hp), size=3, color = "#1098d6") +
+    theme( text = element_text(family="Roboto"),
+         axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 10, l = 10)),
+         panel.grid.minor = element_blank()
+         )+
+  coord_cartesian(ylim = c(0, 35))
+
+#ggsave("images/scatter.png",width = 6, height = 5)
+```
+
+```{r}
+ggplot(mtcars) +
+  geom_point(aes(y=mpg, x=hp, color=wt), size=3) +
+  scale_color_gradient(low="grey", high="black") +
+    theme( text = element_text(family="Roboto"),
+         axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 10, l = 10)),
+         panel.grid.minor = element_blank()
+         )+
+  coord_cartesian(ylim = c(0, 35))
+
+#ggsave("images/scatter_gradient.png", width = 6, height = 5)
+```
+
+```{r}
+ggplot(mtcars) +
+  geom_point(aes(y=mpg, x=hp, color=factor(cyl)), size=3) +
+  labs(color='cyl') +
+    theme( text = element_text(family="Roboto"),
+         axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 10, l = 10)),
+         panel.grid.minor = element_blank()
+         )+
+  coord_cartesian(ylim = c(0, 35))
+  
+
+#ggsave("images/scatter_color.png",width = 6, height = 5)
+```
+
+```{r}
+ggplot(mtcars) +
+  geom_point(aes(y=mpg, x=hp, shape=factor(cyl)), size=3) +
+  labs(color='cyl') +
+    theme( text = element_text(family="Roboto"),
+         axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 10, l = 10)),
+         panel.grid.minor = element_blank()
+         )+
+  coord_cartesian(ylim = c(0, 35))
+  
+#ggsave("images/scatter_shape.png",width = 6, height = 5)
+```
+
+
+```{r}
+ggplot(mtcars) +
+  geom_histogram(aes(x=mpg), binwidth = 3, fill = "#1098d6") +
+    theme( text = element_text(family="Roboto"),
+         axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 10, l = 10)),
+         panel.grid.minor = element_blank()
+         )
+  
+
+#ggsave("images/histo_good.png",width = 6, height = 5)
+```
+
+```{r}
+ggplot(mtcars) +
+  geom_histogram(aes(x=mpg), binwidth = 1, fill = "#1098d6") +
+    theme( text = element_text(family="Roboto"),
+         axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 10, l = 10)),
+         panel.grid.minor = element_blank()
+         )
+  
+
+#ggsave("images/histo_bad.png",width = 6, height = 5)
+```
+```{r}
+data(discoveries)
+
+discoveries <- data.frame(discoveries=c(discoveries), year=1860:1959)
+```
+
+```{r}
+discoveries_10y <- discoveries %>% mutate(decade = floor(year/10)*10) %>% 
+  group_by(decade) %>% 
+  summarize_all(sum) %>% 
+  select(-year)
+```
+
+```{r}
+ggplot(discoveries_10y,aes(x=decade, y=discoveries)) +
+  geom_line(size = 0.5, color = "#1098d6") +
+  geom_point(size = 1, color = "#1098d6") +
+  expand_limits(y=c(0, 65)) +
+  # scale_y_discrete(limits = c(10, 20, 30, 40, 50,60))+
+      theme( text = element_text(family="Roboto"),
+         axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 10, l = 10)),
+         panel.grid.minor = element_blank()
+         )
+  
+#ggsave("images/line_disc_good.png",width = 8, height = 5,type= 'cairo',)
+
+```
+
+```{r}
+data(Seatbelts)
+Seatbelts <- data.frame(Year=floor(time(Seatbelts)),
+Month=factor(cycle(Seatbelts),
+labels=month.abb), Seatbelts)
+```
+
+
+
+```{r}
+ggplot(discoveries,aes(x=year, y=discoveries)) +
+  geom_line(size = 0.5, color = "#1098d6") +
+  geom_point(size = 1, color = "#1098d6") +
+  # expand_limits(y=c(45, 57)) +
+      theme( text = element_text(family="Roboto"),
+         axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 10, l = 10)),
+         panel.grid.minor = element_blank()
+         )
+  
+#ggsave("images/line_disc_bad.png",width = 8, height = 5,type= 'cairo',)
+```
+
+```{r}
+Seatbelts %>% 
+  ggplot(aes(x=Month, y=DriversKilled, group=Year, color=Year)) +
+  geom_line(aes(color=Year), size=1) +
+      theme( text = element_text(family="Roboto"),
+         axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 10, l = 10)),
+         panel.grid.minor = element_blank()
+         )+
+  labs(x="Month", y="No. Drivers Killed")+
+  coord_cartesian(ylim = c(0, 200))
+  
+#ggsave("images/line_disc_bad_2.png",width = 8, height = 5,type= 'cairo',)
+```
+```{r}
+Seatbelts %>% 
+  ggplot(aes(x=Month, y=DriversKilled, group=Year,color=factor(ifelse(Year=="1984","is198","isnot1984")))) +
+  geom_line(size=1) +
+  scale_color_manual(name="Year", values=c("#1b8bf9", "grey80"), labels=c("1984","1969-1983"))+
+#  scale_color_manual(labels = c("1", "0"))+
+      theme( text = element_text(family="Roboto"),
+         axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 10, l = 10)),
+         panel.grid.minor = element_blank()
+         )+
+  labs(x="Month", y="No. Drivers Killed", legend="Year")+
+  coord_cartesian(ylim = c(0, 200))
+  
+
+#ggsave("images/line_disc_good_3.png",width = 8, height = 5,type= 'cairo',)
+```
+
+```{r}
+data(UKgas)
+# UKgas
+
+UKgas <- as.data.frame(as.xts(UKgas))
+UKgas <- cbind(date = rownames(UKgas), UKgas)
+rownames(UKgas) <- 1:nrow(UKgas)
+UKgas <- rename(UKgas, usage = V1)
+
+UKgas <- separate(UKgas, date, c("date", "quarter"), sep=" ")
+
+UKgas$quarter <- factor(UKgas$quarter , levels=c("Q1", "Q2", "Q3","Q4") )
+
+UKgas <- UKgas %>% filter(date!=1986)
+```
+
+```{r}
+ggplot(UKgas, aes(x=date, y=usage, group=quarter, fill=quarter))+
+  geom_area(aes(fill=quarter), position='stack')+
+  scale_fill_manual(values=c("#00b7eb", "#98fb98", "#fcf75e", "#ff8c00"))+
+  scale_x_discrete(breaks = c(1960, 1965, 1970, 1975, 1980, 1985, 1990)) +
+  theme(axis.text.x = element_text(angle =45, vjust = 1.2, hjust=1.2)) +
+  theme( text = element_text(family="Roboto"),
+         axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 15, l = 10)),
+         panel.grid.minor = element_blank()
+         )
+  
+#ggsave("images/area_line_good.png",width = 8, height = 5,type= 'cairo',)
+```
+
+```{r}
+data(Seatbelts)
+
+Seatbelts <- as.data.frame(as.xts(Seatbelts))
+Seatbelts <- cbind(date = rownames(Seatbelts), Seatbelts)
+Seatbelts <- separate(Seatbelts, date, c("month", "year"), sep=" ")
+
+
+ggplot(Seatbelts, aes(x=year, y=DriversKilled, group=month, fill=month))+
+  geom_area(aes(fill=month), position='stack')+
+  # scale_fill_manual(values=c("#00b7eb", "#98fb98", "#fcf75e", "#ff8c00"))+
+  # scale_x_discrete(breaks = c(1960, 1965, 1970, 1975, 1980, 1985, 1990)) +
+  theme(axis.text.x = element_text(angle =45, vjust = 1.2, hjust=1.2)) +
+  theme( text = element_text(family="Roboto"),
+         axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 15, l = 10)),
+         panel.grid.minor = element_blank()
+         )
+
+#ggsave("images/area_line_bad.png",width = 8, height = 5,type= 'cairo',)
+```
+```{r}
+mtcars_pie <- mtcars %>% 
+  group_by(cyl) %>% 
+  count() %>% 
+  ungroup() %>% 
+  mutate(perc = n /sum(n)) %>% 
+  arrange(perc) %>% 
+  mutate(labels = scales::percent(perc))
+
+ggplot(mtcars_pie, aes(x="", y=n, fill=factor(cyl)))+
+  geom_bar(stat="identity", width=1) +
+  geom_text(aes(label=labels), position=position_stack(vjust=0.5), color="white")+
+  coord_polar("y", start=0)+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid  = element_blank(),
+        panel.background = element_rect(fill = 'white', colour = 'white'))+
+        labs(title = "", x = "", y = "", fill = "Cylinders")
+
+
+#ggsave("images/pie_good.png",width = 8, height = 5,type= 'cairo',)
+```
+
+
+
+```{r}
+ggplot(mtcars %>% group_by(cyl) %>% count(cyl), aes(x="", y=n, fill=factor(cyl))) +
+         geom_bar(stat="identity", width=1) +
+         coord_polar("y", start=0)+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid  = element_blank())+
+        labs(title = "", x = "", y = "", fill = "Cylinders")
+```
+
+```{r}
+sleep$extra <- abs(sleep$extra)
+
+sleep <- sleep %>%  arrange(extra)
+
+ggplot(sleep, aes(x="", y=extra, fill=as.factor(ID))) +
+         scale_fill_brewer(palette="RdGy") +
+         geom_bar(stat="identity", width=1, color="black") +
+         coord_polar("y", start=0)+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid  = element_blank(),
+        panel.background = element_rect(fill = 'white', colour = 'white'))+
+        labs(title = "", x = "", y = "", fill = "Group ID")
+
+#ggsave("images/pie_bad.png",width = 8, height = 5,type= 'cairo')
+```
+
+```{r}
+ggplot(mtcars %>% count(cyl), aes(x=factor(cyl), y=n))+
+  geom_bar(stat="identity") +
+  xlab("No. Cylinders") + ylab("Count of Cars")+
+  theme(panel.grid.minor.x = element_blank(),
+        panel.grid.major.y = element_blank())
+
+#ggsave("images/bar_good_1.png",width = 8, height = 5,type= 'cairo')
+```
+
+
+```{r}
+ggplot(mtcars, aes(x=mpg, y=reorder(model, mpg), fill=ifelse(mpg>30, '1',ifelse(mpg<15, '2', '0'))))+
+  geom_bar(stat = "identity")+
+  scale_fill_manual(name="mpg", values=c("grey50","#1b8bf9","#FF0000"))+
+    theme(legend.position="none",
+          panel.grid.minor.x = element_blank())+
+  labs(x="mpg", y="Car Model")
+
+#ggsave("images/bar_good_2.png",width = 8, height = 7,type= 'cairo')
+```
+```{r}
+mtcars_stacked_bar_merc <- mtcars %>% 
+  filter(make=='Merc') %>% 
+  group_by(make, cyl) %>% 
+  count() %>% 
+  ungroup() %>% 
+  mutate(perc = n /sum(n)) %>% 
+  arrange(perc) %>% 
+  mutate(labels = scales::percent(perc))
+
+mtcars_stacked_bar_toy <- mtcars %>% 
+  filter(make=='Toyota') %>% 
+  group_by(make, cyl) %>% 
+  count() %>% 
+  ungroup() %>% 
+  mutate(perc = n /sum(n)) %>% 
+  arrange(perc) %>% 
+  mutate(labels = scales::percent(perc))
+
+mtcars_stacked_bar <- rbind(mtcars_stacked_bar_merc,mtcars_stacked_bar_toy)
+
+ggplot(mtcars_stacked_bar, aes(y=n, x=reorder(make, n, function(x){ sum(x) }), fill=factor(cyl)))+
+  geom_bar(stat = "identity")+
+  geom_text(aes(label=labels), position=position_stack(vjust=0.5), color="white")+
+    theme(panel.grid.minor.x = element_blank()) +
+  labs(x="Make", y="Count of Cars", fill="Cylinders")
+
+#ggsave("images/bar_good_3.png",width = 8, height = 5,type= 'cairo')
+```
+
+```{r}
+ggplot(mtcars, aes(y=mpg, x=model, fill=ifelse(mpg>30, '1',ifelse(mpg<15, '2', '0'))))+
+  geom_bar(stat = "identity")+
+  scale_fill_manual(name="mpg", values=c("grey50","#1b8bf9","#FF0000"))+
+    theme(legend.position="none",
+          panel.grid.minor.x = element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  labs(x="mpg", y="Car Model")+
+  coord_cartesian(ylim = c(10, 35))
+
+#ggsave("images/bar_bad.png",width = 8, height = 7,type= 'cairo')
+```
+
